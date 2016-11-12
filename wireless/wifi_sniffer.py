@@ -2,12 +2,13 @@
 
 import os
 import sys
+from time import sleep
+from datetime import datetime
 
-from scapy.all import Dot11Beacon
-from scapy.all import Dot11ProbeReq
+from scapy.all import Dot11
 from scapy.all import Dot11ProbeResp
 from scapy.all import sniff
-from scapy.all import Raw
+
 # set interface
 iface = "wlan0"
 if len(sys.argv)>1:
@@ -21,26 +22,16 @@ except Exception as e:
 	exit()
 #only handle beacons packets, probe req/res
 
-def dump_packet(pkt):
-	if not pkt.haslayer(Dot11Beacon) and \
-	   not pkt.haslayer(Dot11ProbeReq) and \
-	   not pkt.haslayer(Dot11ProbeResp):
+def handle_packet(pkt):
+	if not pkt.haslayer(Dot11ProbeResp):
+	    try:
+	       print "[%s] %s searches for %s " % (str(datetime.now()), pkt[Dot11].addr2, pkt.info)
+	    except Exception as e:
+	   	   pass
 
-	   print pkt.summary()
+        sleep(0.5)
+# start sniffing
+print "Sniffing on interface "+iface
 
-	   if pkt.haslayer(Raw):
-	      print hexdump(pkt.load)
-	   print "\n"
-
-#keep sniffing
-while True:
-	for channel in {11, 1}:
-		try:
-			os.system("iwconfig "+iface+" channel "+str(channel))
-		except Exception as e:
-			exit()
-
-        print "Sniffing on channel "+str(channel)
-
-        sniff(iface=iface, prn=dump_packet, count=10, timeout=3,store=0)
+sniff(iface=iface, prn=handle_packet)
 
